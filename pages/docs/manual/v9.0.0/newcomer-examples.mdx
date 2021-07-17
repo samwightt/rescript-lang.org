@@ -132,3 +132,101 @@ function greetByName(possiblyNullName) {
 </CodeTab>
 
 This check compiles to `possiblyNullName == null` in JS, so checks for the presence of `null` or `undefined`.
+
+## Modeling reducers
+
+A reducer is a function that accepts in some state and an action and returns a new state. In ReScript, you can model the state and the action as separate types.
+  
+### Modeling state
+  
+For modeling the state type, it's best to use a record over an object type:
+  
+<CodeTab labels={["ReScript", "JS Output"]}>
+
+```res example
+type countType = {
+  count: int
+}
+
+let reducer = ({ count }: countType, _): countType => {
+  { count: count + 1 }
+}
+```
+```js
+function reducer(param, param$1) {
+  return {
+          count: param.count + 1 | 0
+        };
+}
+```
+
+</CodeTab>
+
+When you need to store a dictionary of values, try using the `Belt.Map` type. The `Belt` library contains safe methods for working with immutable data structures (they won't throw errors):
+
+<CodeTab labels={["ReScript", "JS Output"]}>
+
+```res example
+open Belt
+
+type todo = {
+  id: string,
+  name: string,
+  completed: bool
+}
+
+type state = {
+  todos: Map.String.t<todo>
+}
+
+// Example of a function that adds a todo. We use the `Belt.Map.String.set`
+// function to add the todo to the todos map.
+let addTodo = (state: state, todo: todo): state => {
+  {...state, todos: state.todos->Map.String.set(todo.id, todo)}
+}
+```
+```js
+function addTodo(state, todo) {
+  return {
+          todos: Belt_MapString.set(state.todos, todo.id, todo)
+        };
+}
+```
+
+</CodeTab>
+
+## Modeling actions
+
+For smaller reducers (reducers with only a few sub-functions), you can use a variant for your action type. You can use a `switch` statement to pattern match on the different action types. Here's an example of a reducer for a simple counter:
+
+```res example
+type state = {
+  count: int
+}
+  
+type action =
+  | Increment
+  | Decrement
+
+let reducer = (state: state, action: action): state => {
+  switch action {
+  | Increment => { count: state.count + 1 }
+  | Decrement => { count: state.count - 1 }
+  }
+}
+```
+```js
+function reducer(state, action) {
+  if (action) {
+    return {
+            count: state.count - 1 | 0
+          };
+  } else {
+    return {
+            count: state.count + 1 | 0
+          };
+  }
+}
+```
+
+</CodeTab>
